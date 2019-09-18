@@ -9,7 +9,6 @@ This is the first and only *individual* (as opposed to *team*) this semester.
 
 Term: Fall 2019
 
-<<<<<<< HEAD
 + Projec title: The evolution of songs in 30 years 
 
 + This project is conducted by Justine Zhang
