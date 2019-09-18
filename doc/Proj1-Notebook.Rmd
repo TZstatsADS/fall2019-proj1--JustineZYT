@@ -1,0 +1,251 @@
+---
+title: "Proj1-Notebook"
+author: "Justine Z"
+date: "9/17/2019"
+output: html_document
+---
+
+#Step 0: Load Libraries
+```{r load libraries, warning=FALSE, message=FALSE}
+library("tidyverse")
+library("tidytext")
+library("plotly")
+library("DT")
+library("tm")
+library("data.table")
+library("scales")
+library("wordcloud2")
+library("gridExtra")
+library("ngram")
+library("shiny") 
+library("rvest")
+library("tibble")
+library("qdap")
+library("sentimentr")
+library("gplots")
+library("dplyr")
+library("tm")
+library("readtext")
+library("syuzhet")
+library("factoextra")
+library("beeswarm")
+library("scales")
+library("RColorBrewer")
+library("RANN")
+library("topicmodels")
+library("wordcloud")
+
+source("../lib/plotstacked.R")
+source("../lib/speechFuncs.R")
+```
+
+#Step 2: Load the processed lyrics data along with artist information
+
+We use the processed data and artist information for our analysis.
+
+```{r load data, warning=FALSE, message=FALSE}
+# load lyrics data
+load('../output/processed_lyrics.RData') 
+# load artist information
+dt_artist <- fread('../data/artists.csv') 
+dt_lyrics$words = word_count(dt_lyrics$lyrics)
+```
+
+
+# Step 3: Basic analysis: Length of lyrics for different types and different years
+
+Since the size of lyric data before 1990 is limited, we typically select songs written in 1990s and 2010s in this study. By comparing the lengthes of lyrics for different genres in these 2 time periods, we can obtain a basic insights in how the trend goes.
+
+```{r}
+lyrics_list <- c("Folk", "R&B", "Electronic", "Jazz", "Indie", "Country", "Rock", "Metal", "Pop", "Hip-Hop", "Other")
+time_list <- c("1970s", "1980s", "1990s", "2000s", "2010s")
+```
+
+We first create a new database for year 1990s and plot the number of words in lyrics for different types in 1990s.
+
+```{r}
+dt_lyrics.sel=filter(dt_lyrics, 
+                     genre%in%lyrics_list)%>%
+              filter(year>=1990) %>%
+              filter(year<2000)
+dt_lyrics.sel$genre=factor(dt_lyrics.sel$genre)
+dt_lyrics.sel$genreOrdered=reorder(dt_lyrics.sel$genre, 
+                                  dt_lyrics.sel$words, 
+                                  mean, 
+                                  order=T)
+```
+```{r, fig.width = 3, fig.height = 2}
+
+par(mar=c(4, 4, 5, 1))
+
+beeswarm(words~genreOrdered, 
+         data=dt_lyrics.sel,
+         horizontal = TRUE, 
+         pch=14, col=alpha(brewer.pal(9, "Set1"), 0.6), 
+         cex=0.55, cex.axis=0.8, cex.lab=0.8,
+         spacing=1/nlevels(dt_lyrics.sel$genreOrdered),
+         las=2, xlab="Number of words in a lyrics.", ylab="",
+         main="Length of lyrics for different types in 1990s.")
+```
+
+
+We then create a new database for year 2010s and plot the number of words in lyrics for different types in 2010s.
+
+```{r}
+dt_lyrics.sel2010 = filter(dt_lyrics, 
+                     genre%in%lyrics_list)%>%
+              filter(year>=2010) %>%
+              filter(year<2020)
+dt_lyrics.sel2010$genre=factor(dt_lyrics.sel2010$genre)
+dt_lyrics.sel2010$genreOrdered=reorder(dt_lyrics.sel2010$genre, 
+                                  dt_lyrics.sel2010$words, 
+                                  mean, 
+                                  order=T)
+```
+```{r, fig.width = 3, fig.height = 2}
+
+par(mar=c(4, 4, 5, 1))
+
+beeswarm(words~genreOrdered, 
+         data=dt_lyrics.sel2010,
+         horizontal = TRUE, 
+         pch=14, col=alpha(brewer.pal(9, "Set1"), 0.6), 
+         cex=0.55, cex.axis=0.8, cex.lab=0.8,
+         spacing=0.4/nlevels(dt_lyrics.sel2010$genreOrdered),
+         las=2, xlab="Number of words in a lyrics.", ylab="",
+         main="Length of lyrics for different types in 2010s.")
+```
+
+We can see in the belowing 2 figures that the average lengthes of lyrics increase for most genres form 1990s to 2010s, where Hip-Hop increases the most and Mental increases the least. Also, we notice that the lengthes of rock music centralize around a small number, while other genres of music are more dispersed in length.
+
+
+
+# Step 4: Sentiment Analysis
+
+How the emotions expressed by the songs have changed during these 30 years? It is interesting to note that people's pursuit of positive emotions, such as love, joy and hope, is constant.
+
+```{r, message=FALSE, warning=FALSE}
+lyrics.list1990=NULL
+for(i in 1:nrow(dt_lyrics.sel)){
+  lyrics=dt_lyrics.sel$lyrics[i]
+  if(dt_lyrics.sel$words[i]>0){
+    emotions=get_nrc_sentiment(lyrics)
+    emotions=as.matrix(emotions)/dt_lyrics.sel$words[i]
+    lyrics.list1990=rbind(lyrics.list1990, 
+                        cbind(dt_lyrics.sel[i,],
+                              emotions))
+  }
+}
+```
+```{r, message=FALSE, warning=FALSE}
+lyrics.list2010=NULL
+for(i in 1:nrow(dt_lyrics.sel2010)){
+  lyrics=dt_lyrics.sel2010$lyrics[i]
+  if(dt_lyrics.sel2010$words[i]>0){
+    emotions=get_nrc_sentiment(lyrics)
+    emotions=as.matrix(emotions)/dt_lyrics.sel2010$words[i]
+    lyrics.list2010=rbind(lyrics.list2010, 
+                        cbind(dt_lyrics.sel2010[i,],
+                              emotions))
+  }
+}
+```
+
+
+## Emotion distribution for different time period
+```{r, fig.width=2, fig.height=1.5}
+par(mar=c(4, 6, 2, 1))
+emo.means=colMeans(select(lyrics.list1990, anger:trust)>0.01)
+col.use=c("red2", "darkgoldenrod1", 
+            "chartreuse3", "blueviolet",
+            "darkgoldenrod2", "dodgerblue3", 
+            "darkgoldenrod1", "darkgoldenrod1")
+barplot(emo.means[order(emo.means)], las=2, col=col.use[order(emo.means)], horiz=T, main="Lyrics in 1990s")
+```
+```{r, fig.width=2, fig.height=1.5}
+par(mar=c(4, 6, 2, 1))
+emo.means=colMeans(select(lyrics.list2010, anger:trust)>0.01)
+col.use=c("red2", "darkgoldenrod1", 
+            "chartreuse3", "blueviolet",
+            "darkgoldenrod2", "dodgerblue3", 
+            "darkgoldenrod1", "darkgoldenrod1")
+barplot(emo.means[order(emo.means)], las=2, col=col.use[order(emo.means)], horiz=T, main="Lyrics in 2010s")
+```
+
+In the past 30 years, although the length and form of the songs have changed a lot, the core emotions they want to express have not changed. Most songs want to express our inner joy and anticipation.
+
+In the next step, we will see which words appear most frequently to verify the positive emotions that songs always want to express.
+
+```{r}
+corpus <- VCorpus(VectorSource(dt_lyrics.sel$stemmedwords))
+tdm.all<-TermDocumentMatrix(corpus)
+tdm.tidy=tidy(tdm.all)
+tdm.overall=summarise(group_by(tdm.tidy, term), sum(count))
+```
+
+```{r, fig.height=5.5, fig.width=5.5}
+wordcloud(tdm.overall$term, tdm.overall$`sum(count)`,
+          scale=c(8,0.5),
+          max.words=100,
+          min.freq=1,
+          random.order=FALSE,
+          rot.per=0.3,
+          use.r.layout=T,
+          random.color=FALSE,
+          colors=brewer.pal(9,"Blues"))
+```
+
+Key words: love, baby, time, heart
+
+## Clustering of emotions
+```{r, fig.height=2, fig.width=2.5}
+presid.summary=tbl_df(lyrics.list1990)%>%
+  #group_by(paste0(type, File))%>%
+  group_by(genre)%>%
+  summarise(
+    anger=mean(anger),
+    anticipation=mean(anticipation),
+    disgust=mean(disgust),
+    fear=mean(fear),
+    joy=mean(joy),
+    sadness=mean(sadness),
+    surprise=mean(surprise),
+    trust=mean(trust)
+  )
+
+presid.summary=as.data.frame(presid.summary)
+rownames(presid.summary)=as.character((presid.summary[,1]))
+km.res=kmeans(presid.summary[,-1], iter.max=200,
+              5)
+fviz_cluster(km.res, 
+             stand=F, repel= TRUE,
+             data = presid.summary[,-1], xlab="", xaxt="n",
+             show.clust.cent=FALSE)
+```
+
+```{r, fig.height=2, fig.width=2.5}
+presid.summary=tbl_df(lyrics.list2010)%>%
+  #group_by(paste0(type, File))%>%
+  group_by(genre)%>%
+  summarise(
+    anger=mean(anger),
+    anticipation=mean(anticipation),
+    disgust=mean(disgust),
+    fear=mean(fear),
+    joy=mean(joy),
+    sadness=mean(sadness),
+    surprise=mean(surprise),
+    trust=mean(trust)
+  )
+
+presid.summary=as.data.frame(presid.summary)
+rownames(presid.summary)=as.character((presid.summary[,1]))
+km.res=kmeans(presid.summary[,-1], iter.max=200,
+              5)
+fviz_cluster(km.res, 
+             stand=F, repel= TRUE,
+             data = presid.summary[,-1], xlab="", xaxt="n",
+             show.clust.cent=FALSE)
+```
+
+The emotion expressed by Metal music is distinct from other genres of music. We can check using word cloud and find that the most common words in mental music are "dark", "sad", "cry", etc, which are negative words while other music genre are more positive. Further, we notice that folk music was increasingly expressing positive emotions in 30 years.
