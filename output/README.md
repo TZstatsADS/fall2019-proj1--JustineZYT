@@ -2,4 +2,4 @@
 
 ### Output folder
 
-Processed_lyrics.RData is the lyrics data after preproccessing
+Processed_lyrics.RData is the lyrics data after preproccessing.
