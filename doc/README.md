@@ -2,4 +2,6 @@
 
 ### Doc folder
 
-The doc directory contains the report or presentation files. It can have subfolders.  
+Proj1-Notebook.Rmd is the main code and presentation of my project.
+
+Text_Proccessing.Rmd is the code to preproccess the given text data.
