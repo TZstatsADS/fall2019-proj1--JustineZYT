@@ -2,5 +2,4 @@
 
 ### Output folder
 
-The output directory contains analysis output, processed datasets, logs, or other processed things.
-
+Processed_lyrics.RData is the lyrics data after preproccessing
