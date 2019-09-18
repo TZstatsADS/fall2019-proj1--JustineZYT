@@ -9,7 +9,11 @@ This is the first and only *individual* (as opposed to *team*) this semester.
 
 Term: Fall 2019
 
+<<<<<<< HEAD
 + Projec title: The evolution of songs in 30 years 
+=======
++ Projec title: Lorem ipsum dolor sit amet
+>>>>>>> f68464c8074e045361818c4f7fac89476351ff56
 + This project is conducted by Justine Zhang
 
 + Project summary: [a short summary] We typically use the data of songs written in 1990s and 2010s in this study. By comparing genres, length of lyrics for different music genres and also the emotions artists want to express in these two time periods, we obtain some useful insights in the evolution of songs in the past 30 years. Although the length and form of the songs have changed a lot, the core emotions they want to express have not changed. It is interesting to note that people's pursuit of positive emotions, such as love, joy and hope, is constant.
